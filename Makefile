@@ -10,13 +10,6 @@ TOPDIR ?= $(CURDIR)
 include $(DEVKITARM)/3ds_rules
 
 #-------------------------------------------------------------------------------
-# TARGET is the name of the output
-# BUILD is the directory where object files & intermediate files will be placed
-# SOURCES is a list of directories containing source code
-# DATA is a list of directories containing data files
-# INCLUDES is a list of directories containing header files
-# ROMFS is the directory containing data to be added to RomFS
-#-------------------------------------------------------------------------------
 TARGET		:=	IslandRPG
 BUILD		:=	build
 SOURCES		:=	source
@@ -24,8 +17,6 @@ DATA		:=	data
 INCLUDES	:=	include
 ROMFS		:=	romfs
 
-#-------------------------------------------------------------------------------
-# options for code generation
 #-------------------------------------------------------------------------------
 ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 
@@ -43,14 +34,8 @@ LDFLAGS	=	-specs=3dsx_specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 LIBS	:= -lcitro3d -lctru -lm
 
 #-------------------------------------------------------------------------------
-# list of directories containing libraries, this must be the top level
-# containing include and lib
-#-------------------------------------------------------------------------------
 LIBDIRS	:= $(CTRULIB)
 
-#-------------------------------------------------------------------------------
-# no real need to edit anything past this point unless you need to add
-# additional rules for different file extensions
 #-------------------------------------------------------------------------------
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #-------------------------------------------------------------------------------
@@ -137,8 +122,6 @@ else
 DEPENDS	:=	$(OFILES:.o=.d)
 
 #-------------------------------------------------------------------------------
-# main targets
-#-------------------------------------------------------------------------------
 $(OUTPUT).3dsx	:	$(OUTPUT).elf $(_3DSXDEPS)
 
 $(OUTPUT).elf	:	$(OFILES)
@@ -146,16 +129,22 @@ $(OUTPUT).elf	:	$(OFILES)
 $(OFILES_SOURCES) : $(HFILES_BIN)
 
 #-------------------------------------------------------------------------------
-%.shbin.o %_shbin.h :	%.v.pica %.g.pica
+%.shbin.o %_shbin.h :	%.shbin
 #-------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
 
 #-------------------------------------------------------------------------------
-%.shbin.o %_shbin.h :	%.v.pica
+%.shbin :	%.v.pica %.g.pica
 #-------------------------------------------------------------------------------
 	@echo $(notdir $<)
-	@$(bin2o)
+	@picasso -o $@ $^
+
+#-------------------------------------------------------------------------------
+%.shbin :	%.v.pica
+#-------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@picasso -o $@ $
 
 -include $(DEPENDS)
 
