@@ -2,6 +2,10 @@
 .fvec projection[4]
 .fvec modelView[4]
 
+; Constante utilisée pour écrire 1.0 (composante w de la position homogène)
+.constf myconst(0.0, 1.0, 0.0, 0.0)
+.alias  ones myconst.yyyy
+
 .alias inpos v0
 .alias incolor v1
 
@@ -15,7 +19,7 @@
 
 	; Transformation position : modelView puis projection
 	mov r1.xyz, inpos
-	mov r1.w,   1.0
+	mov r1.w,   ones
 
 	dp4 r2.x, modelView[0], r1
 	dp4 r2.y, modelView[1], r1
