@@ -26,7 +26,7 @@ static void* playerVbo = NULL;
 
 static void sceneInit(void) {
 	// Charge et lie le vertex shader
-vshader_dvlb = DVLB_ParseFile((u32*)vshader_shbin, vshader_shbin_size);
+	vshader_dvlb = DVLB_ParseFile((u32*)vshader_shbin, vshader_shbin_size);
 	shaderProgramInit(&program);
 	shaderProgramSetVsh(&program, &vshader_dvlb->DVLE[0]);
 	C3D_BindProgram(&program);
@@ -79,3 +79,68 @@ int main(int argc, char* argv[]) {
 	consoleInit(GFX_BOTTOM, NULL); // console texte sur l'écran du bas pour debug
 
 	sceneInit();
+
+	Player player;
+	Player_Init(&player);
+
+	Camera camera;
+	Camera_Init(&camera);
+
+	while (aptMainLoop()) {
+		hidScanInput();
+		u32 kDown = hidKeysDown();
+		if (kDown & KEY_START) break;
+
+		circlePosition cpad;
+		hidCircleRead(&cpad);
+		float moveX = (float)cpad.dx / 156.0f; // normalisation approximative [-1,1]
+		float moveZ = (float)cpad.dy / 156.0f;
+		if (moveX > 1.0f) moveX = 1.0f; if (moveX < -1.0f) moveX = -1.0f;
+		if (moveZ > 1.0f) moveZ = 1.0f; if (moveZ < -1.0f) moveZ = -1.0f;
+
+		// D-Pad gauche/droite pour tourner la caméra autour du joueur
+		float rotateInput = 0.0f;
+		u32 kHeld = hidKeysHeld();
+		if (kHeld & KEY_DLEFT)  rotateInput = -1.0f;
+		if (kHeld & KEY_DRIGHT) rotateInput = 1.0f;
+
+		float dt = 1.0f / 60.0f;
+
+		Camera_Update(&camera, rotateInput, dt);
+		// Le déplacement est relatif à l'orientation actuelle de la caméra (moveZ inversé car "avant" = éloigné caméra)
+		Player_Update(&player, moveX, -moveZ, camera.yaw, dt);
+
+		printf("\x1b[1;1HPos: %.1f, %.1f     ", player.x, player.z);
+
+		C3D_Mtx view;
+		Camera_ComputeView(&camera, &player, &view);
+
+		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+		C3D_RenderTargetClear(targetTop, C3D_CLEAR_ALL, 0x68C8FFFF, 0); // ciel bleu clair
+		C3D_FrameDrawOn(targetTop);
+
+		C3D_CullFace(GPU_CULL_BACK_CCW);
+		C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
+
+		// --- Sol (statique, matrice modèle = identité, seule la vue compte) ---
+		drawMesh(groundVbo, groundVertexCount, &view);
+
+		// --- Joueur : matrice modèle (position + rotation) combinée à la vue ---
+		C3D_Mtx model;
+		Mtx_Identity(&model);
+		Mtx_Translate(&model, player.x, player.y, player.z, true);
+		Mtx_RotateY(&model, player.facingAngle, true);
+
+		C3D_Mtx modelView;
+		Mtx_Multiply(&modelView, &view, &model);
+
+		drawMesh(playerVbo, playerCubeVertexCount, &modelView);
+
+		C3D_FrameEnd(0);
+	}
+
+	sceneExit();
+	C3D_Fini();
+	gfxExit();
+	return 0;
+}
