@@ -8,7 +8,7 @@
 #include "player.h"
 #include "camera.h"
 #include "ground.h"
-#include "shader_shbin.h"
+#include "vshader_shbin.h"
 
 #define DISPLAY_TRANSFER_FLAGS \
 	(GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
@@ -26,7 +26,7 @@ static void* playerVbo = NULL;
 
 static void sceneInit(void) {
 	// Charge et lie le vertex shader
-vshader_dvlb = DVLB_ParseFile((u32*)shader_shbin, shader_shbin_size);
+vshader_dvlb = DVLB_ParseFile((u32*)vshader_shbin, vshader_shbin_size);
 	shaderProgramInit(&program);
 	shaderProgramSetVsh(&program, &vshader_dvlb->DVLE[0]);
 	C3D_BindProgram(&program);
